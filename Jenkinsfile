@@ -1,7 +1,8 @@
 pipeline {
     agent any
+
     environment {
-        PATH = "/usr/bin:$PATH" 
+        PYTHONUNBUFFERED = '1'
     }
 
     stages {
@@ -14,29 +15,40 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo 'Starting Build Stage...'
-                sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
+                echo 'Starting Build Stage (Windows)...'
+                bat '''
+                    @echo off
+                    echo Checking Python version...
+                    python --version
+
+                    echo Creating virtual environment...
+                    python -m venv venv
+
+                    echo Activating virtual environment...
+                    call venv\\Scripts\\activate.bat
+
+                    echo Installing dependencies...
                     pip install --upgrade pip
-                    if [ -f requirements.txt ]; then
+                    
+                    if exist requirements.txt (
                         pip install -r requirements.txt
-                    else
-                        echo "No requirements.txt found. Installing Flask manually."
+                    ) else (
+                        echo No requirements.txt found. Installing Flask and Pytest manually.
                         pip install flask pytest
-                    fi
+                    )
                 '''
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Starting Test Stage...'
-                sh '''
-                    . venv/bin/activate
-                    # If you have specific tests, point to them. 
-                    # This runs discovery on the current directory.
-                    python3 -m pytest || echo "No tests found, skipping..."
+                echo 'Starting Test Stage (Windows)...'
+                bat '''
+                    @echo off
+                    call venv\\Scripts\\activate.bat
+                    
+                    echo Running Tests...
+                    python -m pytest || echo Tests failed or none found.
                 '''
             }
         }
